@@ -17,8 +17,6 @@ morgan.token('body', function getRequestBody(req, res) {
 })
 app.use(morgan(':method :url :status :res[content-length] :response-time ms :body'))
 
-const persons = [];
-
 /**
  * Get all records
  */
