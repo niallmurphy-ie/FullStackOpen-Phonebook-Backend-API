@@ -13,10 +13,10 @@ mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true, useFind
 	})
 
 const phonebookSchema = new mongoose.Schema({
-	name: String,
-	number: String
+	name: { type: String, required: true, unique: true, minLength:3 },
+	number: { type: String, required: true, unique: true, minLength: 8 }
 })
-// phonebookSchema.plugin(uniqueValidator);
+phonebookSchema.plugin(uniqueValidator);
 
 /**
  * Change _id from object to string and get rid of MongoDB versioning

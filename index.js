@@ -28,9 +28,9 @@ app.get('/api/persons', async (request, response) => {
 /**
  * Get an individual record
  */
- app.get('/api/persons/:id', (request, response, next) => {
-  const _id = request.params.id
-  PhonebookEntry.findById({ _id })
+app.get('/api/persons/:id', (request, response, next) => {
+  const id = request.params.id
+  PhonebookEntry.findById({ id })
     .then(person => {
       person ? response.json(person) : response.status(404).end()
     })
@@ -39,22 +39,14 @@ app.get('/api/persons', async (request, response) => {
 /**
  * Create a new record
  */
-app.post('/api/persons', async (request, response, next) => {
-  const newEntry = request.body;
-  if (Object.keys(newEntry).length === 0) {
-    return response.status(400).json({
-      error: 'content missing'
-    })
-  }
-  // Check that entry will be valid
-  const errorCheck = await isError(newEntry)
-  if (errorCheck) return response.status(409).json({ error: errorCheck.error })
-  // Mongoose
-  const entry = new PhonebookEntry(newEntry)
-  entry.save().then(result => {
-    response.json(result)
+app.post('/api/persons', (request, response, next) => {
+  const entry = new PhonebookEntry(response.body)
+  entry.save().then(createdPerson => {
+    response.json(createdPerson)
   })
-    .catch(error => next(error))
+    .catch(error => {
+      next(error)
+    })
 })
 
 /**
@@ -84,15 +76,6 @@ app.put('/api/persons/:id', async (request, response, next) => {
     .catch(error => next(error))
 })
 
-const isError = entry => {
-  const errors = PhonebookEntry.find({}).then(persons => {
-    if (persons.some(person => person.name === entry.name)) return { error: "Name already exists " }
-    if (entry.name === "" || entry.number === "") return { error: "Name or number missing" }
-    return false
-  })
-  return errors
-}
-
 app.get('/info', async (request, response) => {
   let msg = '';
   const persons = await PhonebookEntry.find({})
@@ -113,9 +96,11 @@ const unknownEndpoint = (request, response) => {
 app.use(unknownEndpoint)
 
 const errorHandler = (error, request, response, next) => {
-  console.log(error.message)
-  if (error.message === "CastError") {
+  if (error.name === "CastError") {
     return response.status(400).json({ error: error.message })
+  }
+  if (error.name === "ValidationError") {
+    return response.status(400).json({ error: error.message})
   }
   next(error)
 }
