@@ -1,89 +1,84 @@
-require('dotenv').config()
+require('dotenv').config();
 
-const express = require('express')
-const app = express()
-const morgan = require('morgan')
-const cors = require('cors')
+const express = require('express');
 
-const PhonebookEntry = require('./models/phonebook')
+const app = express();
+const morgan = require('morgan');
+const cors = require('cors');
 
-app.use(cors())
-app.use(express.json())
-app.use(express.static('build'))
+const PhonebookEntry = require('./models/phonebook');
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static('build'));
 
 // New token for Morgan debugging
-morgan.token('body', function getRequestBody(req, res) {
-  return JSON.stringify(req.body)
-})
-app.use(morgan(':method :url :status :res[content-length] :response-time ms :body'))
+morgan.token('body', (req) => JSON.stringify(req.body));
+app.use(morgan(':method :url :status :res[content-length] :response-time ms :body'));
 
 /**
  * Get all records
  */
 app.get('/api/persons', async (request, response) => {
-  const persons = await PhonebookEntry.find({})
-  response.json(persons)
-})
+	const persons = await PhonebookEntry.find({});
+	response.json(persons);
+});
 
 /**
  * Get an individual record
  */
 app.get('/api/persons/:id', (request, response, next) => {
-  const id = request.params.id
-  PhonebookEntry.findById({ id })
-    .then(person => {
-      person ? response.json(person) : response.status(404).end()
-    })
-    .catch(error => next(error))
-})
+	const { id } = request.params;
+	PhonebookEntry.findById({ id })
+		.then((person) => (person ? response.json(person) : response.status(404).end()))
+		.catch((error) => next(error));
+});
 /**
  * Create a new record
  */
 app.post('/api/persons', (request, response, next) => {
-  const entry = new PhonebookEntry(response.body)
-  entry.save().then(createdPerson => {
-    response.json(createdPerson)
-  })
-    .catch(error => {
-      next(error)
-    })
-})
+	const entry = new PhonebookEntry(response.body);
+	entry.save().then((createdPerson) => {
+		response.json(createdPerson);
+	})
+		.catch((error) => {
+			next(error);
+		});
+});
 
 /**
  * Delete an individual record
  */
 app.delete('/api/persons/:id', (request, response, next) => {
-  const _id = request.params.id
-  PhonebookEntry.findByIdAndDelete({ _id })
-    .then(result => {
-      response.status(204).end()
-    })
-    .catch(error => next(error))
-})
+	const { id } = request.params;
+	PhonebookEntry.findByIdAndDelete({ id })
+		.then(() => {
+			response.status(204).end();
+		})
+		.catch((error) => next(error));
+});
 
 /**
  * Update a record
  */
 app.put('/api/persons/:id', async (request, response, next) => {
-  const entry = request.body
-  const _id = request.params.id
-  if (Object.keys(entry).length === 0) next(error)
+	const entry = request.body;
+	const { id } = request.params;
 
-  PhonebookEntry.findByIdAndUpdate(_id, entry, { new: true })
-    .then(updatedRecord => {
-      response.status(200).json(updatedRecord)
-    })
-    .catch(error => next(error))
-})
+	PhonebookEntry.findByIdAndUpdate(id, entry, { new: true })
+		.then((updatedRecord) => {
+			response.status(200).json(updatedRecord);
+		})
+		.catch((error) => next(error));
+});
 
 app.get('/info', async (request, response) => {
-  let msg = '';
-  const persons = await PhonebookEntry.find({})
-  msg += `Phonebook has ${persons.length} people<br>`
-  msg += new Date().toLocaleTimeString();
-  response.send(msg)
-})
-
+	let msg = '';
+	const persons = await PhonebookEntry.find({});
+	msg += `Phonebook has ${persons.length} people<br>`;
+	msg += new Date().toLocaleTimeString();
+	response.send(msg);
+});
 
 /**
  * Middleware for unknown pages
@@ -91,22 +86,22 @@ app.get('/info', async (request, response) => {
  * @param {*} response
  */
 const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: 'unknown endpoint' })
-}
-app.use(unknownEndpoint)
+	response.status(404).send({ error: 'unknown endpoint' });
+};
+app.use(unknownEndpoint);
 
 const errorHandler = (error, request, response, next) => {
-  if (error.name === "CastError") {
-    return response.status(400).json({ error: error.message })
-  }
-  if (error.name === "ValidationError") {
-    return response.status(400).json({ error: error.message})
-  }
-  next(error)
-}
-app.use(errorHandler)
+	if (error.name === 'CastError') {
+		return response.status(400).json({ error: error.message });
+	}
+	if (error.name === 'ValidationError') {
+		return response.status(400).json({ error: error.message });
+	}
+	return next(error);
+};
+app.use(errorHandler);
 
-const PORT = process.env.PORT
+const { PORT } = process.env;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-})
+	console.log(`Server running on port ${PORT}`);
+});
